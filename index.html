@@ -187,11 +187,13 @@ function showRecs(tdiv, div, aid) {
         }
     ).done(function(data) {
         var seed = artist_cache[aid];
-        div.append( $("<h2>").text("You listen to " + seed['name'] + " so you might like ..."));
-        _.each(data.response.artists, function(artist) {
-            addEventArtist(div, artist.id);
-            addTopRecs(artist.id, 1);
-        });
+        if (data.response.artists.length > 0) {
+            div.append( $("<h2>").html("You listen to <span class='seed-name'>" + seed['name'] + "</span> so you might like ..."));
+            _.each(data.response.artists, function(artist) {
+                addEventArtist(div, artist.id);
+                addTopRecs(artist.id, 1);
+            });
+        }
     }).error( function() {
         error("Problem getting recs ...");
     }).done(function() {
@@ -204,7 +206,7 @@ function showRecs(tdiv, div, aid) {
 var spotify_cache = {};
 
 function getSpotifyInfo(event, callback) {
-    if ('spotify' in event.ids) {
+    if (event && 'ids' in event && 'spotify' in event.ids) {
         var spid = event.ids.spotify.split(':')[2];
         if (! (spid in spotify_cache)) {
             var url = 'https://api.spotify.com/v1/artists/' + spid;
@@ -221,7 +223,7 @@ function getSpotifyInfo(event, callback) {
             callback(spotify_cache[spid]);
         }
     } else {
-        callback(null);
+        // callback(null);
     }
 }
 

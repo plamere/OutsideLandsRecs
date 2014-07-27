@@ -91,6 +91,7 @@
 
 .artist-name {
     font-size:48px;
+    font-family: 'Sigmar One', cursive;
 }
 
 .show-time {
@@ -109,5 +110,11 @@
 .play-button {
     position:absolute;
     left:0px;
+}
+
+.seed-name {
+    color:rgb(125,196, 201);
+    font-weight:bold;
+
 }
 
