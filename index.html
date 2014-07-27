@@ -12,8 +12,6 @@
 
 <body>
 
-
-
     <div id="search" class="hero-unit">
        <div class="container">
           <div id="intro">
@@ -22,6 +20,9 @@
             <p id='description' class="lead">This app makes 
                 <a href="http://www.sfoutsidelands.com/home/">Outside Lands</a> festival recommendations for you
                 <br>based upon the tracks you've saved on Spotify</p>
+            <p> You can also listen to this <a
+            href="http://open.spotify.com/user/plamere/playlist/6QH9jakFrygP9Gnu4QMjp7"> Spotify Playlist
+            of Outside Lands 2014 Artists </a>
            </div>
             <div id="info" class="info"> </div>
         </div>
@@ -49,7 +50,7 @@
         <a href="http://http://www.sfoutsidelands.com/home/.com">Outside Lands</a> and 
         <a href="http://echonest.com">The Echo Nest</a>. 
         <br>
-        Source on <a href="https://github.com/plamere/OutsideLandsHack">github</a>.
+        Source on <a href="https://github.com/plamere/OutsideLandsRecs">github</a>.
         </p>
       </small>
       </div>
@@ -349,6 +350,7 @@ function updateTopRecs(tdiv) {
     _.each(tlist, function(aid) {
         addEventArtist(tdiv, aid);
     });
+    $("#info").hide();
 }
 
 function fetchOutsideLandsRecommendations() {

@@ -1,6 +1,6 @@
 .hero-unit {
   margin-top:0px;
-  padding-bottom:30px;
+  padding-bottom:10px;
   color: #fff;
   background-color: #84BD00;
   background-color: rgb(42,62,73);
@@ -50,8 +50,8 @@
 
 #main h2 {
     font-size:32px;
-    margin-top:40px;
-    padding-top:40px;
+    margin-top:20px;
+    padding-top:20px;
     border-top-width:thin;
     border-top-style:solid;
     margin-left:auto;
