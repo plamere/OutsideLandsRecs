@@ -1,0 +1,476 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title> Your Outside Lands Festival Recommendations</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link type="text/css" href="styles.css" rel="stylesheet" />
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="lib/underscore-min.js"></script>
+    <link href="//maxcdn.bootstrapcdn.com/bootswatch/3.2.0/superhero/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Sigmar+One' rel='stylesheet' type='text/css'>
+</head>
+
+<body>
+
+
+
+    <div id="search" class="hero-unit">
+       <div class="container">
+          <div id="intro">
+              <img width="800px" id="logo" src="logo.png">
+            <h1 id='hero-title'> Recommendations</h1>
+            <p id='description' class="lead">This app makes 
+                <a href="http://www.sfoutsidelands.com/home/">Outside Lands</a> festival recommendations for you
+                <br>based upon the tracks you've saved on Spotify</p>
+           </div>
+            <div id="info" class="info"> </div>
+        </div>
+    </div>
+
+
+    <div id="main" class="container">
+        <div id="item-list"> 
+            <div id="search-form" class="form-inline">
+                <span class="xform-control">
+                    <button class="btn btn-lg btn-primary" id='go' type="button">
+                    Get Your Outside Lands Recommendations</button>
+                </span>
+            </div>
+         </div>
+    </div>
+
+    <div id="footer">
+      <div class="">
+      <small>
+        <p class="muted credit">Created by <a href="http://twitter.com/plamere">@plamere</a>
+        at <a href="http://www.outsidehacks.com/">OutsideHacks</a>. 
+        <br>
+        Powered by <a href="http://spotify.com">Spotify</a>,
+        <a href="http://http://www.sfoutsidelands.com/home/.com">Outside Lands</a> and 
+        <a href="http://echonest.com">The Echo Nest</a>. 
+        <br>
+        Source on <a href="https://github.com/plamere/OutsideLandsHack">github</a>.
+        </p>
+      </small>
+      </div>
+    </div>
+
+</div>
+
+<script>
+"use strict";
+
+var accessToken = null;
+var artist_cache = {};
+var concertData = {};
+var topArtists = { }
+var topRecs = { }
+var audio = $("<audio>");
+
+jQuery.ajaxSettings.traditional = true; 
+
+$(audio).bind('ended', function() {
+    if (nowPlayingButton) {
+        showPlay(nowPlayingButton);
+        nowPlayingButton = null;
+    }
+});
+
+var dayOfWeek = {
+    '2014-08-10': 'Sunday',
+    '2014-08-09': 'Saturday',
+    '2014-08-08': 'Friday',
+}
+
+
+function error(msg) {
+    $("#info").text(msg).addClass("error");
+}
+
+function info(msg) {
+    $("#info").text(msg).removeClass("error");;
+}
+
+function authorizeUser() {
+    var client_id = 'f804c186e5794871ada2252f3f3f273c';
+    var main_redirect_uri = 'http://static.echonest.com/OutsideLandsRecs';
+    var local_redirect_uri = 'http://localhost:8000';
+    var redirect_uri = main_redirect_uri;
+
+    if (document.URL.indexOf('localhost') >= 0) {
+        redirect_uri = local_redirect_uri;
+    }
+
+    var url = 'https://accounts.spotify.com/authorize?client_id=' + client_id +
+        '&response_type=token' +
+        '&scope=user-library-read' +
+        '&redirect_uri=' + encodeURIComponent(redirect_uri);
+    document.location = url;
+}
+
+function parseArgs() {
+    var hash = location.hash.replace(/#/g, '');
+    var all = hash.split('&');
+    var args = {};
+    _.each(all, function(keyvalue) {
+        var kv = keyvalue.split('=');
+        var key = kv[0];
+        var val = kv[1];
+        args[key] = val;
+    });
+    return args;
+}
+
+function fetchCurrentUserProfile(callback) {
+    var url = 'https://api.spotify.com/v1/me';
+    callSpotify(url, null, callback);
+}
+
+function fetchSavedTracks(callback) {
+    var url = 'https://api.spotify.com/v1/me/tracks';
+    callSpotify(url, {}, callback);
+}
+
+function callSpotify(url, data, callback) {
+    $.ajax(url, {
+        dataType: 'json',
+        data: data,
+        headers: {
+            'Authorization': 'Bearer ' + accessToken
+        },
+        success: function(r) {
+            callback(r);
+        },
+        error: function(r) {
+            callback(null);
+        }
+    });
+}
+
+
+function aggregateArtists(tracks) {
+    _.each(tracks.items, function(item) {
+        _.each(item.track.artists, function(artist) {
+            if (! (artist.uri  in topArtists)) {
+                topArtists[artist.uri]  = 0;
+                artist_cache[artist.uri] = artist;
+            }
+            topArtists[artist.uri]  += 1;
+        });
+    });
+}
+
+
+var outstandingRecs = 0; // oh happy kludge
+
+function addTopRecs(aid, count) {
+    if (! (aid  in topRecs) ) {
+        topRecs[aid] = 0;
+    }
+    topRecs[aid] += count;
+}
+
+function showRecs(tdiv, div, aid) {
+    var url = 'http://developer.echonest.com/api/v4/artist/similar';
+    outstandingRecs += 1;
+
+    $.getJSON( url,
+        {
+            api_key:'ECLJI0GPBJVEXSZDT',
+            id: aid,
+            results:3,
+            bucket: ['id:CAXQQJM14773F92968'],
+            limit: true,
+        }
+    ).done(function(data) {
+        var seed = artist_cache[aid];
+        div.append( $("<h2>").text("You listen to " + seed['name'] + " so you might like ..."));
+        _.each(data.response.artists, function(artist) {
+            addEventArtist(div, artist.id);
+            addTopRecs(artist.id, 1);
+        });
+    }).error( function() {
+        error("Problem getting recs ...");
+    }).done(function() {
+        if (--outstandingRecs <= 0) {
+            updateTopRecs(tdiv);
+        }
+    });
+}
+
+var spotify_cache = {};
+
+function getSpotifyInfo(event, callback) {
+    if ('spotify' in event.ids) {
+        var spid = event.ids.spotify.split(':')[2];
+        if (! (spid in spotify_cache)) {
+            var url = 'https://api.spotify.com/v1/artists/' + spid;
+            $.getJSON(url)
+                .done(function(data) {
+                    callback(data);
+                    spotify_cache[spid] = data;
+                })
+                .error(function() {
+                    callback(null);
+                    spotify_cache[spid] = null;
+                });
+        } else {
+            callback(spotify_cache[spid]);
+        }
+    } else {
+        callback(null);
+    }
+}
+
+function getBestImage(spinfo) {
+    var minWidth = 800;
+    var minHeight = 300;
+    var bestImage = spinfo.images[0];
+    for (var i = 1; i < spinfo.images.length; i++) {
+        var image = spinfo.images[i];
+        if (image.width >= minWidth && image.height >= minHeight) {
+            bestImage = image;
+        } else {
+            break;
+        }
+    }
+    return bestImage.url;
+}
+
+var spotifyTracks = {};
+var nowPlayingButton = null;
+
+
+function showPause(btn) {
+    btn.find("i").removeClass('glyphicon-play');
+    btn.find("i").addClass('glyphicon-pause');
+}
+
+function showPlay(btn) {
+    btn.find("i").removeClass('glyphicon-pause');
+    btn.find("i").addClass('glyphicon-play');
+}
+
+function playSpotifyArtist(button,spinfo) {
+
+    if (nowPlayingButton == button && isPlaying()) {
+        pause();
+        return;
+    }
+
+    if (nowPlayingButton && nowPlayingButton != button) {
+        showPlay(nowPlayingButton);
+    }
+
+    nowPlayingButton = button;
+    var spid = spinfo.uri.split(':')[2];
+
+    if (spid in spotifyTracks) {
+        playNextTrack(spotifyTracks[spid]);
+    } else {
+        var url = 'https://api.spotify.com/v1/artists/' + spid + '/top-tracks';
+        $.getJSON(url, { country:'US'}, function(data) {
+            spotifyTracks[spid] = data;
+            data.trackIndex = 0;
+            playNextTrack(data);
+        });
+    }
+}
+
+function isPlaying() {
+    return !audio.get(0).paused;
+}
+
+function pause() {
+    showPlay(nowPlayingButton);
+    audio.get(0).pause();
+}
+
+function playNextTrack(trackInfo) {
+    var idx = trackInfo.trackIndex;
+    if (++trackInfo.trackIndex >= trackInfo.tracks.length) {
+        trackInfo.trackIndex = 0;
+    }
+    var url = trackInfo.tracks[idx].preview_url;
+    audio.attr('src', url);
+    audio.get(0).play();
+    showPause(nowPlayingButton);
+}
+
+function addEventArtist(tdiv, aid) {
+    var event = concertData[aid];
+    getSpotifyInfo(event, function(spinfo) {
+        var a = $("<a class='artist-name'>").text(event.artist).attr("href", event.link);
+        var div = $("<div>").addClass('artist-info');
+        div.append(a);
+        tdiv.append(div);
+        if (spinfo) {
+            var spdiv = $("<div>");
+            var image_url = getBestImage(spinfo);
+            var img = $("<img class='artist-image'>").attr('src', image_url).attr('width', '800px');
+            spdiv.append(img);
+            div.append(spdiv);
+        } else {
+        }
+
+        if (event.shows.length > 0) {
+            var bottomDiv = $("<div class='bottom-div'>");
+            var showSpan = $("<span>").addClass('show-time');
+            var show = event.shows[0];
+            showSpan.text('Show at ' + show.time + " on " 
+                + dayOfWeek[show.date] + " on the " + show.stage + " stage");
+            var playButton = $('<button class="play-button btn btn-default btn-mini"><i class="glyphicon glyphicon-play"></i></button>');
+            playButton.on('click', function(data) {
+                playSpotifyArtist(playButton, spinfo);
+            });
+
+            bottomDiv.append(playButton);
+            bottomDiv.append(showSpan);
+
+            tdiv.append(bottomDiv);
+        }
+    });
+}
+
+function updateTopRecs(tdiv) {
+    var alist = [];
+
+    _.each(topRecs, function(val, key) {
+        alist.push( [val, key]);
+    });
+
+    alist.sort(function(a,b) {
+        return a[0] - b[0];
+    });
+    alist.reverse();
+
+    var tlist = flattenArtistList(alist.slice(0,5));
+    tdiv.empty();
+    _.each(tlist, function(aid) {
+        addEventArtist(tdiv, aid);
+    });
+}
+
+function fetchOutsideLandsRecommendations() {
+    var alist = [];
+
+    _.each(topArtists, function(val, key) {
+        alist.push( [val, key]);
+    });
+
+    alist.sort(function(a,b) {
+        return a[0] - b[0];
+    });
+    alist.reverse();
+
+    if (alist.length == 0) {
+        error("Can't give you any recommendations because you don't have any saved tracks on Spotify. Sorry.");
+    } else {
+        info("");
+        findMatchingOutsideLandsArtists(alist);
+        var list1 = flattenArtistList(alist.slice(0,10));
+        $("#main").show();
+        var ilist = $("#item-list");
+        ilist.empty();
+        ilist.append("<h2> Your Top Overall Recommendations </h2>");
+        var tdiv = $("<div>");
+        ilist.append(tdiv);
+        _.each(list1, function(aid) {
+            var div = $("<div>");
+            ilist.append(div);
+            showRecs(tdiv, div, aid);
+        });
+    }
+}
+
+function flattenArtistList(alist) {
+    var out = [];
+    _.each(alist, function(a) {
+        out.push(a[1]);
+    });
+    return out;
+}
+
+function isOutsideLandsSpotifyArtist(spid) {
+    var found = null;
+    _.each(concertData, function(event) {
+        if ('spotify' in event.ids && event.ids.spotify == spid) {
+            found = event;
+        }
+    });
+    return found;
+}
+
+function findMatchingOutsideLandsArtists(alist) {
+    _.each(alist, function(artist) {
+        var count = artist[0];
+        var spid = artist[1];
+        var found = isOutsideLandsSpotifyArtist(spid);
+        if (found) {
+            addTopRecs(found.ids.echonest, 10);
+        }
+    });
+}
+
+function processTracks(tracks) {
+    var list = $("#item-list");
+    list.empty();
+
+    aggregateArtists(tracks);
+    if (tracks.next) {
+        callSpotify(tracks.next, {}, function(tracks) {
+            processTracks(tracks);
+        });
+    } else {
+        info("Generating recommendations");
+        fetchOutsideLandsRecommendations();
+    }
+}
+
+function init() {
+    var args = parseArgs();
+
+    if ('access_token' in args) {
+        accessToken = args['access_token'];
+        $("#go").hide();
+        info('Getting your user profile');
+        fetchCurrentUserProfile(function(user) {
+            if (user) {
+                $("#who").text(user.id);
+                info('Sifting through your listening data');
+                fetchSavedTracks(function(data) {
+                    if (data) {
+                        processTracks(data);
+                    } else {
+                        error("Trouble getting your saved tracks");
+                    }
+                });
+            } else {
+                error("Trouble getting the user profile");
+            }
+        });
+    } else {
+        $("#go").show();
+        $("#go").on('click', function() {
+            authorizeUser();
+        });
+    }
+}
+
+$(document).ready(
+    function() {
+        $.getJSON('http://static.echonest.com/OutsideLands/lineup_2014.json', function(data) {
+            _.each(data, function(artist) {
+                if ('echonest' in artist.ids) {
+                    concertData[artist.ids.echonest] = artist
+                }
+            });
+            init();
+        });
+    }
+);
+
+</script>
+<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+</body>
+</html>

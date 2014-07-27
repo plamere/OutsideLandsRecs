@@ -1,0 +1,113 @@
+.hero-unit {
+  margin-top:0px;
+  padding-bottom:30px;
+  color: #fff;
+  background-color: #84BD00;
+  background-color: rgb(42,62,73);
+  text-align:center;
+}
+
+#logo {
+    margin-top:10px;
+}
+
+#hero-title {
+    font-size:64px;
+    font-weight:bold;
+    font-family: 'Sigmar One', cursive;
+    color:rgb(224, 92,27);
+}
+
+.navbar-nav li a {
+    cursor:pointer;
+}
+
+#main {
+    margin-left:auto;
+    margin-right:auto;
+    width:90%;
+    text-align:center;
+    font-size:22px;
+}
+
+#description {
+    width:800px;
+    margin-left:auto;
+    margin-right:auto;
+    font-size:24px;
+}
+
+#footer {
+    margin-top:20px;
+    margin-left:auto;
+    margin-right:auto;
+    text-align:center;
+    padding-top:20px;
+    border-top-width:thin;
+    border-top-style:solid;
+    width:900px
+}
+
+#main h2 {
+    font-size:32px;
+    margin-top:40px;
+    padding-top:40px;
+    border-top-width:thin;
+    border-top-style:solid;
+    margin-left:auto;
+    margin-right:auto;
+    width:900px;
+}
+
+.info {
+    margin-top:20px;
+    margin-left:10px;
+    width:100%;
+    text-align:center;
+    height:32px;
+    font-size:24px;
+}
+
+.error {
+    font-size:24px;
+    font-weight:bold;
+    color:rgb(244,92,27);
+}
+
+.added {
+    font-size:12px;
+    margin-bottom:4px;
+}
+
+.artist-info {
+    margin-top:30px;
+    width:800px;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+.artist-image {
+}
+
+.artist-name {
+    font-size:48px;
+}
+
+.show-time {
+    margin-top:4px;
+    font-size:18px;
+    text-align:left;
+}
+
+.bottom-div {
+    position:relative;
+    width:800px;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+.play-button {
+    position:absolute;
+    left:0px;
+}
+
